@@ -1,0 +1,14 @@
+/var/log/corerad/corerad.log {
+	rotate 12
+	monthly
+	compress
+	delaycompress
+	nocreate
+	missingok
+	postrotate
+		if invoke-rc.d corerad status > /dev/null 2>&1; then \
+			invoke-rc.d corerad restart > /dev/null 2>&1; \
+		fi;
+	endscript
+}
+
