@@ -1,0 +1,8 @@
+# Configuration file for /etc/init.d/corerad
+# Author: Antti Kultanen <pyksy at pyksy dot fi>
+
+### Path to CoreRAD binary
+DAEMON="/usr/local/sbin/corerad"
+
+### Path to CoreRAD configuration file
+#CONFIG="/etc/corerad/corerad.toml"

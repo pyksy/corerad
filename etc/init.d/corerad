@@ -1,0 +1,115 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          corerad
+# Required-Start:    $network $remote_fs $local_fs
+# Required-Stop:     $network $remote_fs $local_fs
+# Should-Start:      dibbler-client
+# Should-Stop:       dibbler-client
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: IPv6 Router Advertisement Daemon
+# Description:       CoreRAD is an extensible and observable IPv6
+#                    Neighbor Discovery Protocol router advertisement daemon.
+### END INIT INFO
+
+# Author: Antti Kultanen <pyksy at pyksy dot fi>
+
+PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+DAEMON="/usr/sbin/corerad"
+NAME="corerad"
+DESC="CoreRAD IPv6 router advertisement daemon"
+CONFIG="/etc/corerad/corerad.toml"
+LOGDIR="/var/log/corerad"
+LOGFILE="${LOGDIR}/corerad.log"
+PIDFILE="/run/corerad.pid"
+OPTIONS="-c ${CONFIG}"
+
+source /lib/lsb/init-functions
+
+[ -f /etc/default/corerad ] && source /etc/default/corerad
+[ -x "${DAEMON}" ] || exit 0
+
+check_config() {
+	if [ ! -e "${CONFIG}" ] || [ ! -s "${CONFIG}" ]
+	then
+		log_end_msg 1
+		log_action_msg "* Configuration file ${CONFIG} does not exist or is empty"
+		exit 1
+	fi
+}
+
+check_logdir() {
+	if ! mkdir -p "${LOGDIR}" 2>/dev/null
+	then
+		log_end_msg 1
+		log_action_msg "* Unable to create logging directory ${LOGDIR}"
+		exit 1
+	fi
+}
+
+check_running() {
+	if status_of_proc "${DAEMON}" "${DESC}" > /dev/null
+	then
+		log_progress_msg "already running"
+		log_end_msg 0
+		exit 0
+	fi
+}
+
+start_corerad() {
+	log_daemon_msg "Starting ${DESC}" "$NAME"
+
+	check_running
+	check_config
+	check_logdir
+
+	if start-stop-daemon --start \
+		--pidfile "${PIDFILE}" \
+		--make-pidfile \
+		--background \
+		--output "${LOGFILE}" \
+		--exec "${DAEMON}" -- ${OPTIONS}
+	then
+		log_success_msg
+	else
+		log_failure_msg
+		exit 1
+	fi
+}
+
+stop_corerad() {
+	log_daemon_msg "Stopping ${DESC}" "$NAME"
+
+	if start-stop-daemon --stop \
+		--pidfile "${PIDFILE}" \
+		--remove-pidfile \
+		--signal HUP \
+		--quiet \
+		--exec "${DAEMON}"
+	then
+		log_success_msg
+	else
+		log_failure_msg
+		return 1
+	fi
+}
+
+case "${1}" in
+	start)
+		start_corerad
+	;;
+	stop)
+		stop_corerad || exit ${?}
+	;;
+	restart)
+		stop_corerad
+		start_corerad
+	;;
+	status)
+		status_of_proc -p "${PIDFILE}" "${DAEMON}" "${NAME}" && exit 0 || exit ${?}
+	;;
+	*)
+		log_action_msg "Usage: ${0} {start|stop|restart|status}" >&2
+	;;
+esac
