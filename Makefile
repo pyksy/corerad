@@ -32,3 +32,8 @@ install-configs:
 		test -e "$(ETCDIR)/$(file)" || install -v -Dm644 "etc/$(file)" "$(ETCDIR)/$(file)";)
 
 install: install-bin install-init install-configs
+
+clean:
+	rm -f cmd/corerad/corerad
+
+distclean: clean
